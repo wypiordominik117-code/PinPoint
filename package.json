@@ -1,0 +1,15 @@
+{
+  "name": "pinpoint",
+  "version": "1.0.0",
+  "description": "Pinpoint OSINT toolkit",
+  "author": "Pinpoint",
+  "main": "main.js",
+  "scripts": { "start": "electron ." },
+  "devDependencies": { "electron": "^31.0.0", "electron-builder": "^24.13.3" },
+  "build": {
+    "appId": "app.pinpoint.osint",
+    "productName": "Pinpoint",
+    "files": ["main.js", "index.html", "icon-512.png"],
+    "win": { "target": "portable", "artifactName": "Pinpoint.exe" }
+  }
+}

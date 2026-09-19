@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pinpoint - OSINT toolkit</title>
+<meta name="theme-color" content="#0B161F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#E8EFF2; --panel:#FFFFFF; --ink:#0F2230; --muted:#546B7A; --line:#C6D5DC;
+  --accent:#0B7A75; --accent-ink:#FFFFFF; --amber:#A75F00; --field:#F4F8FA;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B161F; --panel:#12222E; --ink:#E3EEF2; --muted:#8CA3B2; --line:#243A4A;
+    --accent:#45D2C5; --accent-ink:#04211F; --amber:#F0B44C; --field:#0D1B26;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B161F; --panel:#12222E; --ink:#E3EEF2; --muted:#8CA3B2; --line:#243A4A;
+  --accent:#45D2C5; --accent-ink:#04211F; --amber:#F0B44C; --field:#0D1B26;
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);padding-bottom:88px;-webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto;padding:0 16px}
+header{max-width:640px;margin:0 auto;padding:22px 16px 10px;display:flex;gap:14px;align-items:center}
+h1{font:700 30px/1.1 var(--display);margin:0;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--muted);font-size:14px;line-height:1.35}
+.sonar{flex:none;width:58px;height:58px;border-radius:50%;position:relative;overflow:hidden;
+  background:radial-gradient(circle,var(--accent) 0 2.5px,transparent 3px),
+  repeating-radial-gradient(circle,transparent 0 9px,color-mix(in srgb,var(--accent) 45%,transparent) 9px 10px);
+  border:1px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+.sonar::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 290deg,color-mix(in srgb,var(--accent) 70%,transparent) 360deg);
+  animation:sweep 3.6s linear infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sonar::after{animation:none}}
+.pane{display:none;padding-top:8px}
+.pane.on{display:block}
+h2{font:700 20px/1.2 var(--display);margin:14px 0 4px}
+.hint{color:var(--muted);font-size:14px;margin:0 0 12px}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+input,textarea{width:100%;font:400 16px/1.4 var(--body);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:12px;-webkit-appearance:none;appearance:none}
+textarea{min-height:120px;resize:vertical;font-family:var(--mono);font-size:14px}
+input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.row>*{flex:1 1 auto}
+button{font:600 15px/1 var(--body);min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.chip{min-height:38px;border-radius:999px;font-size:14px;font-weight:500}
+button:active{transform:translateY(1px)}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--amber);color:var(--amber);font-size:13px;font-weight:600;margin:6px 0}
+.tiles{display:grid;gap:8px;margin:8px 0 14px}
+.tile{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px}
+.tile b{display:block;font-family:var(--display);font-size:16px}
+.tile span{color:var(--muted);font-size:13.5px}
+.group{font:600 13px/1 var(--body);color:var(--muted);margin:16px 0 6px}
+.res{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}
+.res header{padding:0;margin:0 0 6px;max-width:none;display:flex;justify-content:space-between;gap:8px}
+.res h3{margin:0;font:600 15px var(--body)}
+.res pre{margin:0;white-space:pre-wrap;word-break:break-all;font:13.5px/1.5 var(--mono);max-height:220px;overflow:auto}
+.res .small{min-height:32px;padding:0 10px;font-size:13px}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);margin-top:18px;padding-top:10px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav .in{display:flex;width:100%;max-width:640px}
+nav button{flex:1;border:0;border-radius:0;background:none;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-selected="true"]{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+.inst{margin-left:auto;flex:none;min-height:40px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.sheet.on{display:flex}
+.sheet .card{background:var(--panel);border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));width:100%;max-width:640px;max-height:80%;overflow:auto}
+.sheet h2{margin-top:0}.sheet li{margin:6px 0}.sheet ul{padding-left:20px;margin:6px 0 12px}
+.sheet a.dl{display:block;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-ink);font-weight:600;padding:13px;border-radius:10px;margin:8px 0}
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;max-width:90%}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="sonar" aria-hidden="true"></div>
+  <div><h1>Pinpoint</h1><p>Open-source intelligence toolkit. Runs on your phone, nothing you type is uploaded.</p></div>
+  <button class="inst go" id="instBtn">Get app</button>
+</header>
+<main>
+
+<section class="pane on" id="p-target">
+  <h2>Look up a target</h2>
+  <p class="hint">Paste a domain, IP, URL, email, phone number or file hash. Pinpoint detects it and lists public sources to check.</p>
+  <input id="tIn" type="text" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="example.com, 8.8.8.8, +48 123 456 789, https://...">
+  <div class="row"><button class="go" id="tGo">Find sources</button><button id="tSave">Save to notes</button></div>
+  <div id="tOut"></div>
+  <p class="note">Use public sources for security research, verification and journalism. Do not use them to track or harass private individuals, and follow the law and each site's terms.</p>
+</section>
+
+<section class="pane" id="p-dork">
+  <h2>Search dork builder</h2>
+  <p class="hint">Combine advanced search operators, then open the query in a search engine.</p>
+  <label for="dSite">Site or domain</label><input id="dSite" placeholder="example.com" autocapitalize="none" spellcheck="false">
+  <label for="dType">File type</label><input id="dType" placeholder="pdf, xlsx, docx" autocapitalize="none" spellcheck="false">
+  <label for="dInurl">URL contains</label><input id="dInurl" placeholder="admin" autocapitalize="none" spellcheck="false">
+  <label for="dTitle">Title contains</label><input id="dTitle" placeholder="index of" autocapitalize="none" spellcheck="false">
+  <label for="dExact">Exact phrase</label><input id="dExact" placeholder="internal use only" autocapitalize="none" spellcheck="false">
+  <label for="dExc">Exclude words</label><input id="dExc" placeholder="careers jobs" autocapitalize="none" spellcheck="false">
+  <div class="group">Quick presets (use the domain above)</div>
+  <div class="row" id="presets"></div>
+  <label for="dOut">Your query</label>
+  <textarea id="dOut" spellcheck="false"></textarea>
+  <div class="row">
+    <button class="go" data-eng="https://www.google.com/search?q=">Google</button>
+    <button data-eng="https://www.bing.com/search?q=">Bing</button>
+    <button data-eng="https://duckduckgo.com/?q=">DuckDuckGo</button>
+    <button id="dCopy">Copy</button>
+  </div>
+</section>
+
+<section class="pane" id="p-extract">
+  <h2>Extract indicators</h2>
+  <p class="hint">Paste any text (emails, logs, reports, chat). Pinpoint pulls out IPs, domains, URLs, emails, phone numbers, hashes and CVE ids. Defanged text such as hxxp and [.] is understood.</p>
+  <textarea id="xIn" placeholder="Paste text here" spellcheck="false"></textarea>
+  <div class="row">
+    <button class="go" id="xGo">Extract</button>
+    <button id="xDef" aria-pressed="false">Defang output: off</button>
+    <button id="xClr">Clear</button>
+  </div>
+  <div id="xOut"></div>
+</section>
+
+<section class="pane" id="p-decode">
+  <h2>Decode and convert</h2>
+  <p class="hint">Quick transforms for strings you find along the way.</p>
+  <textarea id="cIn" placeholder="Input" spellcheck="false"></textarea>
+  <div class="group">Encode and decode</div>
+  <div class="row">
+    <button data-op="b64e">Base64 encode</button><button data-op="b64d">Base64 decode</button>
+    <button data-op="urle">URL encode</button><button data-op="urld">URL decode</button>
+    <button data-op="hexe">Hex encode</button><button data-op="hexd">Hex decode</button>
+    <button data-op="rot">ROT13</button><button data-op="rev">Reverse</button>
+  </div>
+  <div class="group">URLs and tokens</div>
+  <div class="row">
+    <button data-op="urlp">Parse URL</button><button data-op="defang">Defang</button>
+    <button data-op="refang">Refang</button><button data-op="jwt">Read JWT</button>
+  </div>
+  <div class="group">Hashes and time</div>
+  <div class="row">
+    <button data-op="sha1">SHA-1</button><button data-op="sha256">SHA-256</button><button data-op="sha512">SHA-512</button>
+    <button data-op="time">Timestamp / date</button>
+  </div>
+  <label for="cOut">Result</label>
+  <textarea id="cOut" readonly></textarea>
+  <div class="row"><button id="cCopy">Copy</button><button id="cUse">Use result as input</button><button id="cSave">Save to notes</button></div>
+</section>
+
+<section class="pane" id="p-notes">
+  <h2>Case notes</h2>
+  <p class="hint">Findings stay in this browser only. Copy them out before clearing site data.</p>
+  <textarea id="nIn" style="min-height:300px" placeholder="Nothing saved yet. Use the Save to notes buttons or type here." spellcheck="false"></textarea>
+  <div class="row"><button class="go" id="nCopy">Copy all</button><button id="nClr">Clear notes</button></div>
+</section>
+
+</main>
+
+<nav aria-label="Tools"><div class="in" role="tablist">
+  <button role="tab" data-tab="target" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Target</button>
+  <button role="tab" data-tab="dork" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>Dorks</button>
+  <button role="tab" data-tab="extract" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg>Extract</button>
+  <button role="tab" data-tab="decode" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/></svg>Decode</button>
+  <button role="tab" data-tab="notes" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg>Notes</button>
+</div></nav>
+<div class="sheet" id="sheet"><div class="card">
+  <h2>Get the app</h2>
+  <div id="dlLinks"></div>
+  <p class="hint">Install from the browser (works without a store):</p>
+  <ul>
+    <li><b>iPhone:</b> Safari, Share, Add to Home Screen.</li>
+    <li><b>Android:</b> Chrome menu, Install app.</li>
+    <li><b>Windows or Mac:</b> Chrome or Edge, install icon in the address bar.</li>
+  </ul>
+  <p class="hint">Installing needs the page opened from its own https address, not from a downloaded file.</p>
+  <div class="row"><button id="instNow" class="go" style="display:none">Install now</button><button id="sheetClose">Close</button></div>
+</div></div>
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const enc=encodeURIComponent;
+let toastT;
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800);}
+async function copy(text){
+  try{await navigator.clipboard.writeText(text);toast('Copied');}
+  catch(e){const a=document.createElement('textarea');a.value=text;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Copied');}catch(_){toast('Copy failed');}a.remove();}
+}
+/* notes storage */
+const NK='pinpoint-notes';
+function loadNotes(){try{return localStorage.getItem(NK)||'';}catch(e){return '';}}
+function saveNotes(v){try{localStorage.setItem(NK,v);}catch(e){}}
+function addNote(line){
+  const stamp=new Date().toISOString().slice(0,16).replace('T',' ');
+  const cur=$('nIn').value;
+  $('nIn').value=(cur?cur.replace(/\s+$/,'')+'\n':'')+'['+stamp+'] '+line;
+  saveNotes($('nIn').value);toast('Saved to notes');
+}
+$('nIn').value=loadNotes();
+$('nIn').addEventListener('input',()=>saveNotes($('nIn').value));
+$('nCopy').onclick=()=>copy($('nIn').value);
+$('nClr').onclick=()=>{if($('nIn').value&&confirm('Delete all notes?')){$('nIn').value='';saveNotes('');toast('Notes cleared');}};
+
+/* tabs */
+document.querySelectorAll('nav [data-tab]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav [data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+b.dataset.tab));
+  window.scrollTo(0,0);
+});
+
+/* target lookup */
+function detect(v){
+  if(/^https?:\/\//i.test(v))return'url';
+  if(/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v))return'email';
+  if(/^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/.test(v)||(/^[0-9a-f:]+$/i.test(v)&&v.includes(':')&&v.length>=3))return'ip';
+  if(/^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})$/i.test(v))return'hash';
+  if(/^[+()\d][\d\s().-]{5,22}$/.test(v)){const d=v.replace(/\D/g,'');if(d.length>=7&&d.length<=15&&(/^(\+|00)/.test(v)||d.length>=9))return'phone';}
+  if(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}$/i.test(v))return'domain';
+  return'unknown';
+}
+function domainLinks(d){return[
+ ['WHOIS record','Registrar, dates and name servers','https://who.is/whois/'+d],
+ ['Certificate transparency','Subdomains seen in TLS certificates','https://crt.sh/?q='+d],
+ ['Wayback Machine','Archived copies over time','https://web.archive.org/web/*/'+d],
+ ['urlscan.io','Past scans and screenshots','https://urlscan.io/search/#domain%3A'+d],
+ ['VirusTotal','Reputation and related files','https://www.virustotal.com/gui/domain/'+d],
+ ['Shodan','Exposed services on this host','https://www.shodan.io/search?query=hostname%3A'+d],
+ ['SecurityTrails','DNS history','https://securitytrails.com/domain/'+d+'/dns'],
+ ['BuiltWith','Technology stack','https://builtwith.com/'+d],
+ ['MXToolbox','Mail and DNS health checks','https://mxtoolbox.com/SuperTool.aspx?action=mx%3A'+d+'&run=toolpage']];}
+function ipLinks(ip){return[
+ ['IPinfo','Location, network and owner','https://ipinfo.io/'+ip],
+ ['Shodan','Open ports and banners','https://www.shodan.io/host/'+ip],
+ ['AbuseIPDB','Abuse reports','https://www.abuseipdb.com/check/'+ip],
+ ['VirusTotal','Reputation and related files','https://www.virustotal.com/gui/ip-address/'+ip],
+ ['Hurricane Electric BGP','ASN and prefixes','https://bgp.he.net/ip/'+ip],
+ ['GreyNoise','Internet background noise check','https://viz.greynoise.io/ip/'+ip],
+ ['Censys','Hosts and certificates','https://search.censys.io/hosts/'+ip]];}
+const CC={'1':'United States / Canada (NANP)','7':'Russia / Kazakhstan','20':'Egypt','27':'South Africa','30':'Greece','31':'Netherlands','32':'Belgium','33':'France','34':'Spain','36':'Hungary','39':'Italy','40':'Romania','41':'Switzerland','43':'Austria','44':'United Kingdom','45':'Denmark','46':'Sweden','47':'Norway','48':'Poland','49':'Germany','52':'Mexico','55':'Brazil','61':'Australia','81':'Japan','82':'South Korea','86':'China','90':'Turkey','91':'India','351':'Portugal','353':'Ireland','358':'Finland','370':'Lithuania','371':'Latvia','372':'Estonia','380':'Ukraine','420':'Czechia','421':'Slovakia','971':'United Arab Emirates'};
+function phoneInfo(v){
+  let d=v.replace(/\D/g,'');const intl=/^\+/.test(v.trim())||/^00/.test(v.trim());
+  if(/^00/.test(v.trim()))d=d.slice(2);
+  const lines=[];let e164='',code='',nat='';
+  if(intl){
+    for(const n of [3,2,1]){if(CC[d.slice(0,n)]){code=d.slice(0,n);break;}}
+    e164='+'+d;nat=code?d.slice(code.length):'';
+    lines.push('International format: '+e164);
+    lines.push(code?'Country code +'+code+': '+CC[code]:'Country code not in the built-in list');
+    if(d.length<8||d.length>15)lines.push('Length looks wrong: valid numbers have 8 to 15 digits.');
+    else lines.push('Length looks valid ('+d.length+' digits).');
+    if(code==='48'&&nat.length!==9)lines.push('Polish numbers have 9 digits after +48; this one has '+nat.length+'.');
+    if(code==='1'&&nat.length!==10)lines.push('US and Canadian numbers have 10 digits after +1; this one has '+nat.length+'.');
+  }else{
+    lines.push('No country code, so the country cannot be told. Add it, for example +48 for Poland.');
+    lines.push('Digits only: '+d);
+  }
+  lines.push('Pinpoint cannot say who owns a number or where it is. It only checks the format here.');
+  return{lines,e164,digits:d,code,nat};
+}
+function renderGroups(groups){
+  const out=$('tOut');out.innerHTML='';
+  groups.forEach(g=>{
+    if(g.tag){const s=document.createElement('div');s.className='tag';s.textContent=g.tag;out.appendChild(s);return;}
+    if(g.info){const r=document.createElement('div');r.className='res';g.info.forEach(l=>{const p=document.createElement('p');p.style.margin='4px 0';p.textContent=l;r.appendChild(p);});out.appendChild(r);return;}
+    const h=document.createElement('div');h.className='group';h.textContent=g.title;out.appendChild(h);
+    const box=document.createElement('div');box.className='tiles';
+    g.items.forEach(([n,d,u])=>{
+      const a=document.createElement('a');a.className='tile';a.href=u;a.target='_blank';a.rel='noopener noreferrer';
+      const b=document.createElement('b');b.textContent=n;const s=document.createElement('span');s.textContent=d;
+      a.append(b,s);box.appendChild(a);
+    });
+    out.appendChild(box);
+  });
+}
+let lastTarget='';
+function lookup(){
+  const v=$('tIn').value.trim();
+  if(!v){toast('Enter something first');return;}
+  const t=detect(v);lastTarget=t+': '+v;
+  const g=[];
+  if(t==='domain'){g.push({tag:'Detected: domain'},{title:'Domain sources',items:domainLinks(v.toLowerCase())});}
+  else if(t==='ip'){g.push({tag:'Detected: IP address'},{title:'IP sources',items:ipLinks(v)});}
+  else if(t==='email'){g.push({tag:'Detected: email address'},{title:'Email sources',items:[
+    ['EmailRep','Reputation and risk signals','https://emailrep.io/'+enc(v)],
+    ['Have I Been Pwned','Breaches that include this address','https://haveibeenpwned.com/account/'+enc(v)],
+    ['Exact-match web search','Pages that mention it','https://www.google.com/search?q='+enc('"'+v+'"')]]},
+    {title:'Domain of the address',items:domainLinks(v.split('@')[1].toLowerCase())});}
+  else if(t==='phone'){const pi=phoneInfo(v);g.push({tag:'Detected: phone number'},{info:pi.lines});
+    const its=[['Exact-match web search','Pages that mention this number','https://www.google.com/search?q='+enc('"'+(pi.e164||v)+'"')]];
+    if(pi.e164)its.push(['Tellows','Community spam and scam reports','https://www.tellows.com/num/'+enc(pi.e164)]);
+    if(pi.code==='1'&&pi.nat.length===10)its.push(['800notes','US spam and scam reports','https://800notes.com/Phone.aspx/1-'+pi.nat.slice(0,3)+'-'+pi.nat.slice(3,6)+'-'+pi.nat.slice(6)]);
+    g.push({title:'Spam and scam checks',items:its});lastTarget='phone: '+(pi.e164||v);}
+  else if(t==='hash'){const k=v.length===32?'md5':v.length===40?'sha1':'sha256';
+    g.push({tag:'Detected: '+k.toUpperCase()+' hash'},{title:'File hash sources',items:[
+    ['VirusTotal','Detections for this file','https://www.virustotal.com/gui/file/'+v],
+    ['MalwareBazaar','Malware sample database','https://bazaar.abuse.ch/browse.php?search='+k+'%3A'+v],
+    ['Hybrid Analysis','Sandbox reports','https://www.hybrid-analysis.com/search?query='+v]]});}
+  else if(t==='url'){let host='';try{host=new URL(v).hostname;}catch(e){}
+    g.push({tag:'Detected: URL'},{title:'URL sources',items:[
+    ['urlscan.io','Scan history for this page','https://urlscan.io/search/#'+enc('page.url:"'+v+'"')],
+    ['VirusTotal','Reputation of this URL','https://www.virustotal.com/gui/search/'+enc(v)],
+    ['Wayback Machine','Archived copies','https://web.archive.org/web/*/'+v]]},
+    {title:'If it points to an image (reverse search)',items:[
+    ['Google Lens','Find matches and sources','https://lens.google.com/uploadbyurl?url='+enc(v)],
+    ['TinEye','Earliest known appearances','https://tineye.com/search?url='+enc(v)],
+    ['Yandex Images','Strong for faces and places','https://yandex.com/images/search?rpt=imageview&url='+enc(v)],
+    ['Bing Visual Search','Similar images','https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:'+enc(v)]]});
+    if(host&&detect(host)==='domain')g.push({title:'Host: '+host,items:domainLinks(host.toLowerCase())});
+    else if(host&&detect(host)==='ip')g.push({title:'Host: '+host,items:ipLinks(host)});}
+  else{g.push({tag:'Not recognised'},{title:'Try a general search',items:[
+    ['Web search','Exact-match search','https://www.google.com/search?q='+enc('"'+v+'"')],
+    ['DuckDuckGo','Exact-match search','https://duckduckgo.com/?q='+enc('"'+v+'"')]]});}
+  renderGroups(g);
+}
+$('tGo').onclick=lookup;
+$('tIn').addEventListener('keydown',e=>{if(e.key==='Enter')lookup();});
+$('tSave').onclick=()=>{if(!lastTarget){toast('Find sources first');return;}addNote(lastTarget);};
+
+/* dorks */
+const dFields=['dSite','dType','dInurl','dTitle','dExact','dExc'];
+function quoteIf(s){return /\s/.test(s)?'"'+s+'"':s;}
+function buildDork(){
+  const p=[];const v=id=>$(id).value.trim();
+  if(v('dSite'))p.push('site:'+v('dSite'));
+  if(v('dType'))p.push(v('dType').split(/[\s,]+/).filter(Boolean).map(t=>'filetype:'+t).join(' OR ').replace(/^(.+ OR .+)$/,'($1)'));
+  if(v('dInurl'))p.push('inurl:'+quoteIf(v('dInurl')));
+  if(v('dTitle'))p.push('intitle:'+quoteIf(v('dTitle')));
+  if(v('dExact'))p.push('"'+v('dExact')+'"');
+  if(v('dExc'))p.push(v('dExc').split(/[\s,]+/).filter(Boolean).map(w=>'-'+w).join(' '));
+  $('dOut').value=p.join(' ');
+}
+dFields.forEach(id=>$(id).addEventListener('input',buildDork));
+const presets=[
+ ['Documents',d=>'site:'+d+' (filetype:pdf OR filetype:docx OR filetype:xlsx OR filetype:pptx)'],
+ ['Open directories',d=>'site:'+d+' intitle:"index of"'],
+ ['Subdomains',d=>'site:*.'+d+' -site:www.'+d],
+ ['Login pages',d=>'site:'+d+' (inurl:login OR inurl:admin OR inurl:signin)'],
+ ['Config and logs',d=>'site:'+d+' (ext:env OR ext:log OR ext:bak OR ext:conf)'],
+ ['Mentioned elsewhere',d=>'"'+d+'" -site:'+d]];
+presets.forEach(([n,f])=>{const b=document.createElement('button');b.className='chip';b.textContent=n;
+  b.onclick=()=>{$('dOut').value=f($('dSite').value.trim()||'example.com');};$('presets').appendChild(b);});
+document.querySelectorAll('[data-eng]').forEach(b=>b.onclick=()=>{
+  const q=$('dOut').value.trim();if(!q){toast('Build a query first');return;}
+  window.open(b.dataset.eng+enc(q),'_blank','noopener');});
+$('dCopy').onclick=()=>copy($('dOut').value);
+
+/* extract */
+let defang=false;
+function refang(s){return s.replace(/hxxp/gi,'http').replace(/\[\.\]|\(\.\)|\{\.\}/g,'.').replace(/\[:\]/g,':').replace(/\[@\]|\[at\]/gi,'@');}
+function df(s){return s.replace(/^http/i,'hxxp').replace(/\./g,'[.]').replace(/@/g,'[@]');}
+const FILE_EXT=new Set('txt png jpg jpeg gif svg webp exe dll pdf doc docx xls xlsx ppt pptx js css html htm php py json xml zip rar gz tar log csv md sh bat so ini cfg conf yml yaml'.split(' '));
+function extract(text){
+  const t=refang(text);
+  const uniq=a=>[...new Set(a)];
+  const m=(re)=>uniq((t.match(re)||[]));
+  const urls=m(/https?:\/\/[^\s<>"')\]]+/gi).map(u=>u.replace(/[.,;]+$/,''));
+  const ips=m(/(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.]*\d)/g);
+  const emails=m(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g).map(x=>x.toLowerCase());
+  const ipSet=new Set(ips);
+  const domains=uniq((t.match(/\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi)||[]).map(x=>x.toLowerCase())).filter(d=>!ipSet.has(d)&&!FILE_EXT.has(d.split('.').pop()));
+  const h=(n)=>m(new RegExp('(?<![a-f0-9])[a-f0-9]{'+n+'}(?![a-f0-9])','gi')).map(x=>x.toLowerCase());
+  const cves=m(/\bCVE-\d{4}-\d{4,7}\b/gi).map(x=>x.toUpperCase());
+  const seenP=new Set(),phones=[];
+  [/(?:\+|(?<!\d)00)\d[\d\s().-]{6,17}\d/g,/(?<![\d.])\d{3}[ -]\d{3}[ -]\d{3}(?![\d.])/g,/\(\d{3}\)\s?\d{3}-\d{4}/g,/(?<!\d)\d{3}-\d{3}-\d{4}(?!\d)/g].forEach(re=>(t.match(re)||[]).forEach(x=>{
+    const k=x.replace(/\D/g,'').replace(/^00/,'');if(k.length>=7&&k.length<=15&&!seenP.has(k)&&!ipSet.has(x.trim())){seenP.add(k);phones.push(x.trim());}}));
+  return[['IP addresses',ips],['Domains',domains],['URLs',urls],['Email addresses',emails],['Phone numbers',phones],['SHA-256 hashes',h(64)],['SHA-1 hashes',h(40)],['MD5 hashes',h(32)],['CVE ids',cves]].filter(g=>g[1].length);
+}
+function runExtract(){
+  const src=$('xIn').value;const out=$('xOut');out.innerHTML='';
+  if(!src.trim()){toast('Paste some text first');return;}
+  const groups=extract(src);
+  if(!groups.length){out.innerHTML='<p class="hint">No indicators found in that text.</p>';return;}
+  const all=[];
+  groups.forEach(([name,items])=>{
+    const vals=items.map(x=>defang?df(x):x);all.push(name+':\n'+vals.join('\n'));
+    const box=document.createElement('div');box.className='res';
+    const hd=document.createElement('header');const h3=document.createElement('h3');h3.textContent=name+' ('+items.length+')';
+    const b=document.createElement('button');b.className='small';b.textContent='Copy';b.onclick=()=>copy(vals.join('\n'));
+    hd.append(h3,b);const pre=document.createElement('pre');pre.textContent=vals.join('\n');
+    box.append(hd,pre);out.appendChild(box);
+  });
+  const row=document.createElement('div');row.className='row';
+  const ca=document.createElement('button');ca.className='go';ca.textContent='Copy everything';ca.onclick=()=>copy(all.join('\n\n'));
+  const sn=document.createElement('button');sn.textContent='Save to notes';sn.onclick=()=>addNote('Extracted indicators\n'+all.join('\n\n'));
+  row.append(ca,sn);out.appendChild(row);
+}
+$('xGo').onclick=runExtract;
+$('xDef').onclick=()=>{defang=!defang;$('xDef').setAttribute('aria-pressed',defang);$('xDef').textContent='Defang output: '+(defang?'on':'off');if($('xOut').children.length)runExtract();};
+$('xClr').onclick=()=>{$('xIn').value='';$('xOut').innerHTML='';};
+
+/* decode */
+const te=new TextEncoder(),td=new TextDecoder('utf-8',{fatal:true});
+function bytesToB64(u){let s='';for(let i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s);}
+function b64ToBytes(s){const bin=atob(s.replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+async function digest(alg,s){const d=new Uint8Array(await crypto.subtle.digest(alg,te.encode(s)));return[...d].map(b=>b.toString(16).padStart(2,'0')).join('');}
+function timeOp(s){
+  s=s.trim();
+  if(/^-?\d{9,16}$/.test(s)){let n=Number(s);if(s.replace('-','').length<13)n=n*1000;const d=new Date(n);
+    return 'UTC:   '+d.toISOString()+'\nLocal: '+d.toString();}
+  const d=new Date(s);if(isNaN(d))throw new Error('bad date');
+  return 'Unix seconds: '+Math.floor(d.getTime()/1000)+'\nUnix millis:  '+d.getTime()+'\nUTC: '+d.toISOString();
+}
+const ops={
+  b64e:s=>bytesToB64(te.encode(s)),
+  b64d:s=>td.decode(b64ToBytes(s)),
+  urle:s=>enc(s),
+  urld:s=>decodeURIComponent(s.replace(/\+/g,' ')),
+  hexe:s=>[...te.encode(s)].map(b=>b.toString(16).padStart(2,'0')).join(' '),
+  hexd:s=>{const h=s.replace(/0x|\\x|[^0-9a-f]/gi,'');if(h.length%2)throw new Error('odd');return td.decode(new Uint8Array(h.match(/../g).map(x=>parseInt(x,16))));},
+  rot:s=>s.replace(/[a-z]/gi,c=>{const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b);}),
+  rev:s=>[...s].reverse().join(''),
+  sha1:s=>digest('SHA-1',s),sha256:s=>digest('SHA-256',s),sha512:s=>digest('SHA-512',s),
+  time:timeOp,
+  defang:s=>s.replace(/https?:\/\//gi,m=>m.replace(/^http/i,'hxxp')).replace(/\./g,'[.]').replace(/@/g,'[@]'),
+  refang:s=>refang(s),
+  urlp:s=>{const u=new URL(/^[a-z]+:\/\//i.test(s.trim())?s.trim():'https://'+s.trim());
+    const L=['Scheme: '+u.protocol.replace(':',''),'Host: '+u.hostname,'Port: '+(u.port||'default'),'Path: '+u.pathname];
+    if(u.username)L.push('User: '+u.username);
+    u.searchParams.forEach((v,k)=>L.push('Param '+k+' = '+v));
+    if(u.hash)L.push('Fragment: '+u.hash.slice(1));return L.join('\n');},
+  jwt:s=>{const p=s.trim().split('.');if(p.length<2)throw new Error('jwt');
+    const j=x=>JSON.stringify(JSON.parse(td.decode(b64ToBytes(x))),null,2);
+    return 'Header:\n'+j(p[0])+'\n\nPayload:\n'+j(p[1])+'\n\nSignature is not verified.';}
+};
+document.querySelectorAll('[data-op]').forEach(b=>b.onclick=async()=>{
+  const s=$('cIn').value;if(!s){toast('Enter input first');return;}
+  try{$('cOut').value=await ops[b.dataset.op](s);}
+  catch(e){$('cOut').value='';toast('Could not convert that input');}
+});
+$('cCopy').onclick=()=>copy($('cOut').value);
+$('cUse').onclick=()=>{$('cIn').value=$('cOut').value;$('cOut').value='';};
+$('cSave').onclick=()=>{if(!$('cOut').value){toast('Nothing to save');return;}addNote('Decoded result\n'+$('cOut').value);};
+
+buildDork();
+
+/* app install */
+const APP_LINKS={exe:'',apk:''}; // paste your download URLs here after building
+let deferred=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('instNow').style.display='';});
+window.addEventListener('appinstalled',()=>{deferred=null;$('instNow').style.display='none';toast('App installed');});
+const dl=$('dlLinks');
+[['exe','Download for Windows (.exe)'],['apk','Download for Android (.apk)']].forEach(([k,label])=>{
+  if(APP_LINKS[k]){const a=document.createElement('a');a.className='dl';a.href=APP_LINKS[k];a.textContent=label;dl.appendChild(a);}
+});
+$('instBtn').onclick=()=>$('sheet').classList.add('on');
+$('sheetClose').onclick=()=>$('sheet').classList.remove('on');
+$('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('sheet').classList.remove('on');});
+$('instNow').onclick=async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice;}catch(e){}deferred=null;$('instNow').style.display='none';};
+try{if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
+})();
+</script>
+</body>
+</html>
